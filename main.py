@@ -14,6 +14,7 @@ def query_virustotal(ip):
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
+            print(f"Successful API call for {ip} to VirusTotal. Gathering info..")
             data = response.json()
             reputation = data['data']['attributes']['last_analysis_stats']
             return {
@@ -21,6 +22,7 @@ def query_virustotal(ip):
                 'virustotal_reputation': reputation
             }
         else:
+            print(f"Unsuccessful API call for {ip} to VirusTotal. Check your API Key.")
             return {'ip': ip, 'virustotal_reputation': 'Error: ' + str(response.status_code)}
     except Exception as e:
         return {'ip': ip, 'virustotal_reputation': 'Error: ' + str(e)}
@@ -34,6 +36,7 @@ def query_abuseipdb(ip):
     try:
         response = requests.get(url, headers=headers, params=params)
         if response.status_code == 200:
+            print(f"Successful API call for {ip} to AbuseIPDB. Gathering info..")
             data = response.json()
             reputation = data['data']['abuseConfidenceScore']  # Abuse confidence score (0-100)
             domain = data['data']['domain'] # Domain associated with the IP
@@ -41,12 +44,13 @@ def query_abuseipdb(ip):
             return {
                 'ip': ip,
                 'abuseipdb_reputation': {
-                    'abuseConfidenceScore': "Confidence of abuse is " + str(reputation) + "%",  # The abuse confidence score.
+                    'abuseIPDB_ConfidenceScore': "Confidence of abuse is " + str(reputation) + "%",  # The abuse confidence score.
                     'domain': domain,  # Domain from the abuseIPDB.
                     'hostnames': hostnames # Hostnames associated with the IP.
                 }
             }
         else:
+            print(f"Unsuccessful API call for {ip} to AbuseIPDB. Check your API Key.")
             return {'ip': ip, 'abuseipdb_reputation': 'Error: ' + str(response.status_code)}
     except Exception as e:
         return {'ip': ip, 'abuseipdb_reputation': 'Error: ' + str(e)}
@@ -54,7 +58,18 @@ def query_abuseipdb(ip):
 # Main function to handle IP list and query APIs
 def get_ip_reputations(ip_list):
     results = []
-    
+    print(f"""
+::::::::  :::    :::  ::::::::   :::::::: ::::::::::: :::     ::: ::::::::::: ::::::::  :::::::::: 
+:+:    :+: :+:    :+: :+:    :+: :+:    :+:    :+:     :+:     :+:     :+:    :+:    :+: :+:        
++:+        +:+    +:+ +:+    +:+ +:+           +:+     +:+     +:+     +:+    +:+        +:+        
+:#:        +#++:++#++ +#+    +:+ +#++:++#++    +#+     +#+     +:+     +#+    +#+        +#++:++#   
++#+   +#+# +#+    +#+ +#+    +#+        +#+    +#+      +#+   +#+      +#+    +#+        +#+        
+#+#    #+# #+#    #+# #+#    #+# #+#    #+#    #+#       #+#+#+#       #+#    #+#    #+# #+#        
+ ########  ###    ###  ########   ########     ###         ###     ########### ########  ########## 
+ 
+                                          Initializing...
+    """)
+    time.sleep(2)
     for ip in ip_list:
         print(f"Processing IP: {ip}")
         virustotal_data = query_virustotal(ip)
@@ -62,8 +77,18 @@ def get_ip_reputations(ip_list):
         
         result = {
             'IP': ip,
-            'VirusTotal Reputation': virustotal_data['virustotal_reputation'],
-            'AbuseIPDB Reputation': abuseipdb_data['abuseipdb_reputation']
+            'VirusTotal Reputation': '\n'.join(
+                f"{key}: {value}"
+                for key, value in virustotal_data['virustotal_reputation'].items()
+            )
+            if isinstance(virustotal_data['virustotal_reputation'], dict)
+            else virustotal_data['virustotal_reputation'],
+            'AbuseIPDB Reputation': '\n'.join(
+                f"{key}: {value}"
+                for key, value in abuseipdb_data['abuseipdb_reputation'].items()
+            )
+            if isinstance(abuseipdb_data['abuseipdb_reputation'], dict)
+            else abuseipdb_data['abuseipdb_reputation']
         }
         
         results.append(result)

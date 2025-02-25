@@ -192,7 +192,6 @@ def main_menu():
                 print("\nCurrent API keys:")
                 print(f"  VirusTotal: {current_keys.get('VirusTotal', 'Not set')}")
                 print(f"  AbuseIPDB: {current_keys.get('AbuseIPDB', 'Not set')}")
-
             print("\nEnter new API keys (or press Enter to skip):")
             new_virustotal_key = input("Enter new VirusTotal API Key: ")
             new_abuseipdb_key = input("Enter new AbuseIPDB API Key: ")

@@ -1,2 +1,2 @@
-# OSINT_py
+# GHOSTVICE
 Extracts any reputation information regarding IP's.

@@ -1,4 +1,5 @@
 import csv
+import re
 import requests
 import time
 from tqdm import tqdm
@@ -231,6 +232,89 @@ def read_remote_host_list(file_path = 'hosts.txt'):
     with open(file_path, 'r') as f:
         return [line.strip() for line in f.readlines()]
 
+def extract_indicators(file_path):
+    """Extracts IP addresses, domains, and hashes from a file."""
+    ip_pattern = r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
+    hash_pattern = r'\b[0-9a-fA-F]{64}\b'
+    domain_pattern = re.compile(
+        r'^(https?://)?'  # Optional http:// or https://
+        r'([a-zA-Z0-9.-]+)'  # Domain name (letters, numbers, dots, and dashes)
+        r'(\.[a-zA-Z]{2,})+'  # Top-level domain(s) (e.g., .com, .org, .net)
+        r'([/?].*)?$'  # Optional path, query string, and/or fragment
+    )
+
+    ips = set()
+    domains = set()
+    hashes = set()
+
+    try:
+        with open(file_path, 'r') as file:
+            for line in file:
+                #Domains
+                ips.update(re.findall(ip_pattern, line))
+                domain_matches = re.findall(domain_pattern, line)
+                for match in domain_matches:
+                    domains.add(match[1] + match[2])  # Combine domain name and TLD
+                hashes.update(re.findall(hash_pattern, line))
+    except FileNotFoundError:
+        print(f"Error: File not found at {file_path}")
+        return [], [], []
+    return list(ips), list(domains), list(hashes)
+def extract_from_csv(file_path="indicators.csv"):    
+    try:
+        with open(file_path, 'r', newline='', encoding='utf-8') as csvfile:
+            ips = set()
+            domains = set()
+            hashes = set()
+
+            reader = csv.DictReader(csvfile)
+            
+            for row in reader:
+                if row.get('IPs', '').strip(): ips.add(row.get('IPs').strip())
+                if row.get('Domains', '').strip(): domains.add(row.get('Domains').strip())
+                if row.get('Hashes', '').strip(): hashes.add(row.get('Hashes').strip())
+    except FileNotFoundError:
+        print(f"Error: Indicators CSV file not found at {file_path}")        
+
+    utils.write_indicators_to_files(list(ips), list(domains), list(hashes))
+    print("Indicators extracted from indicators.csv and saved to ips.txt, hosts.txt, and hashes.txt")   
+
+    return list(ips), list(domains), list(hashes)
+
+def option_5_enhanced(api_keys):
+    """Enhanced version of option 5 that handles file creation."""
+    file_name = 'search.txt'    
+    
+    
+    if not os.path.exists(file_name):
+        clear_terminal()
+        print(f"File '{file_name}' not found.\n")
+        create_file = input(f"Would you like to create '{file_name}' and continue? (yes/no): ").lower()
+        if create_file == "yes":
+            create_method = input("Would you like to copy and paste the contents or create it manually? (copy/manual): ").lower()
+            if create_method == "copy":
+                print(f"Paste the content for '{file_name}' here (press Ctrl+D when done):")
+                try:
+                    lines = sys.stdin.read().splitlines()
+                except EOFError:
+                        lines.append(lines)
+                except EOFError:
+                    pass
+                content = '\n'.join(lines)
+                with open(file_name, 'w') as f:
+                    f.write(content)
+                print(f"Content saved to '{file_name}'.")
+            elif create_method == "manual":
+                print(f"Please manually create '{file_name}' and put the content in there.")
+            else:
+                print("Invalid choice. File not created.")
+                return
+        else:
+            print("File not created, returning to main menu.")
+            return
+    clear_terminal()
+            
+
 def file_check():
     files_to_check = ["ips.txt", "hashes.txt", "hosts.txt"]
     for file_name in files_to_check:
@@ -244,13 +328,13 @@ def file_check():
                     # Copy and paste content
                     print(f"Paste the content for '{file_name}' here (press Ctrl+D when done):")
                     lines = []
-                    try:
-                        while True:
-                            line = input()
+                    try:                        
+                        for line in sys.stdin:
                             lines.append(line)
+
                     except EOFError:
-                        pass  # End of input reached
-                    content = '\n'.join(lines)
+                        pass
+                    content = '\n'.join(lines)                    
                     with open(file_name, 'w') as f:
                         try:
                             f.write(content)
@@ -261,7 +345,7 @@ def file_check():
                     # Create manually
                     try:
                         with open(file_name, 'w') as f:
-                            print(f"File '{file_name}' created.")
+                            print(f"File '{file_name}' created, please populate it.")
                     except Exception as e:
                         print(f"Error creating '{file_name}': {e}")
 
@@ -299,35 +383,41 @@ def main_menu():
     print("Loading Main Menu...")
     time.sleep(1)
 
-
     api_keys = utils.load_api_keys()  # Load API keys here
     if not api_keys:
         print("No API keys found. Please set them first (Option 1).")
     
+    
+    def option_1():        
+        clear_terminal()
+        print("Setting API Keys\n")
+        api_keys = utils.load_api_keys()
+
+        print("Current API Keys (press Enter to skip/leave unchanged):")
+        print(f"  VirusTotal: {api_keys.get('VirusTotal', 'Not set')}")
+        print(f"  AbuseIPDB: {api_keys.get('AbuseIPDB', 'Not set')}\n")
+
+        # Prompt for VirusTotal API key
+        virustotal_key = input("Enter VirusTotal API Key: ").strip()
+        if virustotal_key == "":
+            virustotal_key = api_keys.get('VirusTotal', '')
+
+        # Prompt for AbuseIPDB API key
+        abuseipdb_key = input("Enter AbuseIPDB API Key: ").strip()
+        if abuseipdb_key == "":
+            abuseipdb_key = api_keys.get('AbuseIPDB', '')
+        # Save API keys
+        utils.save_api_keys({'VirusTotal': virustotal_key, 'AbuseIPDB': abuseipdb_key})
+
+        print("\nAPI Keys saved:")
+        print(f"  VirusTotal: {virustotal_key if virustotal_key else 'Not set'}")
+        print(f"  AbuseIPDB: {abuseipdb_key if abuseipdb_key else 'Not set'}\n")
+        print("Returning to Main Menu.")
+
+
+
     while True:
-        # Function to set the API key.
-        def option_1():
-            current_keys = utils.load_api_keys()
-            if not current_keys:
-                print("No API keys found. You need to enter API keys for VirusTotal and AbuseIPDB")
-            else:
-                print("\nCurrent API keys:")
-                print(f"  VirusTotal: {current_keys.get('VirusTotal', 'Not set')}") 
-
-                print(f"  AbuseIPDB: {current_keys.get('AbuseIPDB', 'Not set')}")
-            print("\nEnter new API keys (or press Enter to skip):")
-            new_virustotal_key = input("Enter new VirusTotal API Key: ")
-            new_abuseipdb_key = input("Enter new AbuseIPDB API Key: ")
-
-            updated_keys = {'VirusTotal': new_virustotal_key, 'AbuseIPDB': new_abuseipdb_key}
-
-            utils.save_api_keys(updated_keys)  # Save the updated keys, even if they're empty
-            print("\nUpdated API keys, checking now.")
-            print(f"  VirusTotal: {utils.load_api_keys().get('VirusTotal','Not set')}") 
-
-            print(f"  AbuseIPDB: {utils.load_api_keys().get('AbuseIPDB','Not set')}")
-            print("\nAPI keys saved.")
-
+        clear_terminal()
         # Function to copy and paste IPs/Hashes/Hosts
         def option_6():
             print("\nChoose which file to paste into:")
@@ -347,14 +437,16 @@ def main_menu():
                 print(f"Paste the content for '{file_name}' here (press Ctrl+D when done):")
                 lines = []
                 try:
-                    while True:
-                        line = input()
-                        lines.append(line)
+                    lines = sys.stdin.read().splitlines()
                 except EOFError:
                     pass  # End of input reached
                 content = '\n'.join(lines)
                 with open(file_name, 'w') as f:
                     try:
+                        content = '\n'.join(line.strip() for line in content.splitlines() if line.strip())
+                        # Removing empty lines and extra characters from the string
+                        
+
                         f.write(content)
                         print(f"Content pasted into '{file_name}'.")
                     except Exception as e:
@@ -392,6 +484,7 @@ def main_menu():
         print("5. Extract Above Indicators from a text file.")
         print("6. Copy & Paste IPs/Hashes/Hosts into respective files.")
         print("7. Delete and Refresh Ips.txt, Hashes.txt, Hosts.txt")
+        print("8. Read from indicators.csv and write to ips.txt, hosts.txt, hashes.txt")
         print("E. Exit")
 
         choice = input("Enter your choice (1-7), or 'e' to exit: ").lower()
@@ -423,16 +516,31 @@ def main_menu():
             if host_list:
                 print("Gathering reputation report for remote hosts...")
                 results = get_host_reputations(host_list, api_keys)
-                save_host_to_csv(results)
+                save_host_to_csv(results)  
                 print("Reputation report for hosts has been saved to host_output.csv")
             else:
+                
+
                 print("\nNo valid hosts found in hosts.txt")
         elif choice == '5':
             print("Extracting indicators from text file")
+            file_name = 'search.txt'           
+            option_5_enhanced(api_keys)
+            if os.path.exists(file_name):
+                ips, domains, hashes = extract_indicators(file_name)
+                if ips or domains or hashes:
+                    utils.create_csv_file_from_indicators(ips, domains, hashes)
+            
+                else:
+                    print("No indicators were extracted. indicators.csv was not created.")
+
         elif choice == '6':
             option_6()
         elif choice == '7':
             option_7()
+        elif choice == '8':
+            print("Reading indicators from indicators.csv...")
+            extract_from_csv()
         elif choice == 'e':
             print("Exiting...")
             clear_terminal()

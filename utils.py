@@ -24,6 +24,29 @@ def load_api_keys(filename="api_keys.txt"):
 
 def write_indicators_to_files(ips, domains, hashes): #changed order
     """
+    Deletes and recreates the file indicated by file_choice.
+    
+    Args:
+        file_choice (str): The choice made by the user ('1', '2', or '3').
+    """
+
+def delete_and_refresh(file_choice):
+    """
+    Deletes and recreates the file indicated by file_choice.
+    """
+    if file_choice == '1':
+        open('ips.txt', 'w').close()  # Create an empty ips.txt
+    elif file_choice == '2':
+        open('hashes.txt', 'w').close()  # Create an empty hashes.txt
+    elif file_choice == '3':
+        open('hosts.txt', 'w').close() # Create an empty hosts.txt
+    else:
+        print("Invalid choice.")
+
+
+
+def write_indicators_to_files(ips, domains, hashes):
+    """
     Writes IPs to ips.txt, domains to hosts.txt, and hashes to hashes.txt.
     """
     with open("ips.txt", "w") as ip_file:
@@ -60,3 +83,16 @@ def create_csv_file_from_indicators(ips, domains, hashes, filename="indicators.c
         max_len = max(len(ips), len(domains), len(hashes))
         for i in range(max_len):            
             writer.writerow({'IPs': ips[i] if i < len(ips) else '', 'Domains': domains[i] if i < len(domains) else '', 'Hashes': hashes[i] if i < len(hashes) else ''})
+
+
+def get_file_line_counts():
+    """
+    Gets the line count of ips.txt, hosts.txt, and hashes.txt.
+
+    Returns:
+        tuple: A tuple containing the line counts of ips.txt, hosts.txt, and hashes.txt.
+    """
+    ip_line_count = sum(1 for _ in open('ips.txt')) if os.path.exists('ips.txt') else 0
+    host_line_count = sum(1 for _ in open('hosts.txt')) if os.path.exists('hosts.txt') else 0
+    hash_line_count = sum(1 for _ in open('hashes.txt')) if os.path.exists('hashes.txt') else 0
+    return ip_line_count, host_line_count, hash_line_count

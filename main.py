@@ -1,9 +1,11 @@
 import csv
 import re
+import random
 import requests
 import time
 from tqdm import tqdm
-import os, sys
+import os, sys, contextlib
+import textwrap
 import utils, contextlib
 
 # Clean terminal output
@@ -12,17 +14,13 @@ def clear_terminal():
 
 def option_1(api_keys):
     clear_terminal()
-    print("""
-::::::::  :::    :::  ::::::::   :::::::: ::::::::::: :::     ::: ::::::::::: ::::::::  :::::::::: 
-:+:    :+: :+:    :+: :+:    :+: :+:    :+:    :+:     :+:     :+:     :+:    :+:    :+: :+:        
-+:+        +:+    +:+ +:+    +:+ +:+           +:+     +:+     +:+     +:+    +:+        +:+        
-:#:        +#++:++#++ +#+    +:+ +#+    +#+    +#+     +#+     +:+     +#+    +#+        +#++:++#   
-+#+   +#+# +#+    +#+ +#+    +#+        +#+    +#+      +#+   +#+      +#+    +#+        +#+        
-#+#    #+# #+#    #+# #+#    #+# #+#    #+#    #+#       #+#+#+#       #+#    #+#    #+# #+#        
-########  ###    ###  ########   ########     ###         ###     ########### ########  ########## 
-    """)
-    print(f"VirusTotal API Key: {api_keys.get('VirusTotal', 'Not set')}")
-    print(f"AbuseIPDB API Key: {api_keys.get('AbuseIPDB', 'Not set')}\n")
+    light_blue_color_code = "\033[94m"
+    reset_color_code = "\033[0m"
+    print(light_blue_color_code)
+    print(f"Current VirusTotal API Key: {api_keys.get('VirusTotal', 'Not set')}")
+    print(f"Current AbuseIPDB API Key: {api_keys.get('AbuseIPDB', 'Not set')}")
+    print(reset_color_code)
+    print("")
     print("1. Set/Change API Keys.")
     print("2. Exit")
                 
@@ -49,8 +47,10 @@ def option_1(api_keys):
         utils.save_api_keys({'VirusTotal': virustotal_key, 'AbuseIPDB': abuseipdb_key})
 
         print("\nAPI Keys saved.\n")
-        print(f"VirusTotal: {virustotal_key if virustotal_key else 'Not set'}")
-        print(f"AbuseIPDB: {abuseipdb_key if abuseipdb_key else 'Not set'}\n")
+        print(light_blue_color_code)
+        print(f"Current VirusTotal API Key: {virustotal_key if virustotal_key else 'Not set'}")
+        print(f"Current AbuseIPDB API Key: {abuseipdb_key if abuseipdb_key else 'Not set'}")
+        print(reset_color_code)
         print("Returning to Main Menu.\n")
     elif choice == '2':
         return
@@ -420,7 +420,7 @@ def query_virustotal_hash(hash_value, api_keys):
             return {'hash': hash_value, 'virustotal_reputation': 'Error: ' + str(response.status_code)}
     except Exception as e:
         return {'hash': hash_value, 'virustotal_reputation': 'Error: ' + str(e)}
-
+        
 
 
 
@@ -539,34 +539,79 @@ def file_check():
 if __name__ == "__main__":
     clear_terminal()
     while True:
-        print("""
-::::::::  :::    :::  ::::::::   :::::::: ::::::::::: :::     ::: ::::::::::: ::::::::  :::::::::: 
-:+:    :+: :+:    :+: :+:    :+: :+:    :+:    :+:     :+:     :+:     :+:    :+:    :+: :+:        
-+:+        +:+    +:+ +:+    +:+ +:+           +:+     +:+     +:+     +:+    +:+        +:+        
-:#:        +#++:++#++ +#+    +:+ +#++:++#++    +#+     +#+     +:+     +#+    +#+        +#++:++#   
-+#+   +#+# +#+    +#+ +#+    +#+        +#+    +#+      +#+   +#+      +#+    +#+        +#+        
-#+#    #+# #+#    #+# #+#    #+# #+#    #+#    #+#       #+#+#+#       #+#    #+#    #+# #+#        
-########  ###    ###  ########   ########     ###         ###     ########### ########  ########## 
-        """)
+        light_green_color_code = "\033[92m"
+        reset_color_code = "\033[0m"
+        light_blue_color_code = "\033[94m"
+        ascii_art_lines = [
+            "     ::::::::  :::    :::  ::::::::   :::::::: ::::::::::: :::     ::: ::::::::::: ::::::::  :::::::::: ",
+            "    :+:    :+: :+:    :+: :+:    :+: :+:    :+:    :+:     :+:     :+:     :+:    :+:    :+: :+:        ",
+            "    +:+        +:+    +:+ +:+    +:+ +:+           +:+     +:+     +:+     +:+    +:+        +:+        ",
+            "    :#:        +#++:++#++ +#+    +:+ +#++:++#++    +#+     +#+     +:+     +#+    +#+        +#++:++#   ",
+            "    +#+   +#+# +#+    +#+ +#+    +#+        +#+    +#+      +#+   +#+      +#+    +#+        +#+        ",
+            "    #+#    #+# #+#    #+# #+#    #+# #+#    #+#    #+#       #+#+#+#       #+#    #+#    #+# #+#        ",            
+            "     ########  ###    ###  ########   ########     ###         ###     ########### ########  ########## ",
+        ]
+
+        # 2. Create the grid (initially all spaces)
+        grid = []        
+        for line in ascii_art_lines:
+            grid_line = [" "] * len(line)  # Fill each row with spaces
+            grid.append(grid_line)
+
+        revealed_all = False
+        # 3. & 4. Random Reveal Loop
+        revealed_count = 0
+        start_time = time.time()
+        total_characters_to_reveal = sum(len(line) for line in ascii_art_lines) - sum(line.count(" ") for line in ascii_art_lines) # count the characters that are not a space
+
+        while revealed_count < total_characters_to_reveal:
+            if revealed_all:
+                break
+            characters_to_reveal_this_loop = 0
+            for _ in range(125):                
+                row = random.randint(0, len(grid) - 1)                
+                col = random.randint(0, len(grid[0]) - 1)                
+
+                if grid[row][col] == " ":
+                    if ascii_art_lines[row][col] != " ":                        
+                        grid[row][col] = ascii_art_lines[row][col]                        
+                        revealed_count +=1                        
+                        characters_to_reveal_this_loop +=1                
+                if characters_to_reveal_this_loop == 0:                    
+                    break            
+            if time.time() - start_time >= 1.5:
+                for row_index, grid_row in enumerate(grid):
+                    for col_index, cell in enumerate(grid_row):
+                        if cell == " " and ascii_art_lines[row_index][col_index] != " ":
+                            grid[row_index][col_index] = ascii_art_lines[row_index][col_index]
+                revealed_all = True
+                break
+
+            clear_terminal()
+            print(light_green_color_code)
+            for grid_line in grid:
+                print("".join(grid_line))
+            print(reset_color_code)
+                
+            time.sleep(0.00001)       
         
+
+        light_purple_color_code = "\033[95m"
+        grey_color_code = "\033[90m"
+        yellow_color_code = "\033[93m"
         
         file_check()
-        
         # Display current API Keys and file line counts.
         api_keys = utils.load_api_keys()
-        print(f"Current VirusTotal API Key: {api_keys.get('VirusTotal', 'Not set')}")
-        print(f"Current AbuseIPDB API Key: {api_keys.get('AbuseIPDB', 'Not set')}\n")
-        
-        print("Files Checked.")
-        # Display file line counts
-        with open("ips.txt", 'r') as f:
-            ip_line_count = len(f.readlines())
-        with open("hosts.txt", 'r') as f:
-            host_line_count = len(f.readlines())
-        with open("hashes.txt", 'r') as f:
-            hash_line_count = len(f.readlines())
+        print(light_blue_color_code)
+        print(f"Current VirusTotal API Key: {api_keys.get('VirusTotal', 'Not set')}")       
+        print(f"Current AbuseIPDB API Key: {api_keys.get('AbuseIPDB', 'Not set')}")        
+        print(grey_color_code)
+        print("Files checked.")
+        ip_line_count, host_line_count, hash_line_count = utils.get_file_line_counts()
+        print(light_purple_color_code)
         print(f"ips.txt line count: {ip_line_count}, hosts.txt line count: {host_line_count}, hashes.txt line count: {hash_line_count}")
-        print("\nMain Menu:")
+        print("Main Menu:")
         print("1. Set/View API Keys for VirusTotal & AbuseIPDB")
         print("2. Run Reputation Analysis for IPv4 Addresses")
         print("3. Run Repuation Analysis for SHA256 Hashes")
@@ -575,9 +620,12 @@ if __name__ == "__main__":
         print("6. Copy & Paste IPs/Hashes/Hosts into respective files.")
         print("7. Delete and Refresh Ips.txt, Hashes.txt, Hosts.txt")
         print("8. Read from indicators.csv and write to ips.txt, hosts.txt, hashes.txt")
+        print(yellow_color_code)
         print("E. Exit")
+        
+        print(reset_color_code)
 
-        choice = input("Enter your choice (1-7), or 'e' to exit: ").lower()
+        choice = input("Enter your choice (1-8), or 'e' to exit: ").lower()
         if choice == '1':
             option_1(api_keys)
         elif choice == '2':

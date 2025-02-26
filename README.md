@@ -1,6 +1,6 @@
 # GHOSTVICE
 
-Extracts any reputation information regarding IP's in bulk.
+Extracts any reputation information regarding IP's in bulk from VirusTotal & AbuseIPDB.
 
 How to use:
 Select option one if using for the first time to set API keys via VirusTotal & AbuseIPDB
